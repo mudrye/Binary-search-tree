@@ -5,12 +5,12 @@
  * functions you might need.  Also, don't forget to include your name and
  * @oregonstate.edu email address below.
  *
- * Name:
- * Email:
+ * Name: Ella Mudry
+ * Email: mudrye@oregonstate.edu
  */
 
 #include <stdlib.h>
-
+#include <stdio.h>
 #include "bst.h"
 #include "stack.h"
 
@@ -47,7 +47,15 @@ struct bst {
  * a pointer to it.
  */
 struct bst* bst_create() {
-  return NULL;
+  struct bst* bst = malloc(sizeof(struct bst));
+  bst->root = NULL;
+  // bst->root->left = NULL;
+  // bst->root->right = NULL;
+  // bst->root->value = NULL;
+  // bst->root->key = NULL;
+
+
+  return bst;
 }
 
 /*
@@ -59,7 +67,24 @@ struct bst* bst_create() {
  * Params:
  *   bst - the BST to be destroyed.  May not be NULL.
  */
+
+void freer(struct bst_node* node){
+  if(node == NULL){
+    return;
+  }
+  freer(node->left);
+  freer(node->right);
+  free(node);
+  return;
+}
+
 void bst_free(struct bst* bst) {
+  // bst->root->left = NULL;
+  // bst->root->right = NULL;
+  // bst->root->value = NULL;
+  // bst->root->key = NULL;
+  freer(bst->root);
+  free(bst);
   return;
 }
 
@@ -69,9 +94,28 @@ void bst_free(struct bst* bst) {
  *
  * Params:
  *   bst - the BST whose elements are to be counted.  May not be NULL.
+ * https://www.geeksforgeeks.org/write-a-c-program-to-calculate-size-of-a-tree/
  */
+
+int sizer(struct bst_node* bst) {
+  if(bst == NULL){
+    return 0;
+  }
+
+  else{
+    return (sizer(bst->left) + 1 + sizer(bst->right));
+  }
+}
+
 int bst_size(struct bst* bst) {
-  return 0;
+  // if(bst == NULL){
+  //   return 0;
+  // }
+
+  // else{
+  //   return (bst_size(bst->root->left) + 1 + bst_size(bst->root->right));
+  // }
+  return sizer(bst->root);
 }
 
 /*
@@ -90,6 +134,34 @@ int bst_size(struct bst* bst) {
  *     which means that a pointer of any type can be passed.
  */
 void bst_insert(struct bst* bst, int key, void* value) {
+  struct bst_node* P = NULL;
+  struct bst_node* N = bst->root;
+  while(N != NULL){
+    P = N;
+    if(key < N->key){
+      N = N->left;
+    }
+    else{
+      N = N->right;
+    }
+  }
+  
+  struct bst_node* child = malloc(sizeof(struct bst_node));
+  child->key = key;
+  child->value = value;
+  child->left = NULL;
+  child->right = NULL;
+  if(P == NULL){
+    bst->root = child;
+  }
+  else{
+    if(key < P->key){
+      P->left = child;
+    }
+    else{
+      P->right = child;
+    }
+  }
   return;
 }
 
@@ -105,6 +177,77 @@ void bst_insert(struct bst* bst, int key, void* value) {
  *   key - the key of the key/value pair to be removed from the BST.
  */
 void bst_remove(struct bst* bst, int key) {
+  struct bst_node* P = NULL;
+  struct bst_node* N = bst->root;
+  while(key != N->key
+  ){
+    P = N;
+    if(key < N->key){
+      N = N->left;
+    }
+    else{
+      N = N->right;
+    }
+  }
+  if(N->left == NULL && N->right == NULL){
+    if(N->key < P->key){
+      P->left = NULL;
+    }
+    if(N->key > P->key){
+      P->right = NULL;
+    }
+  }
+  else if(N->left != NULL && N->right == NULL){
+    if(N->key < P->key){
+      P->left = N->left;    
+    }
+    if(N->key > P->key){
+      P->right = N->left;
+    }
+    
+  }
+   else if(N->right != NULL && N->left == NULL){
+    if(N->key < P->key){
+      P->left = N->right;    
+    }
+    if(N->key > P->key){
+      P->right = N->right;
+    }
+    
+  }
+  else{
+    /*
+    S, PS ← find N’s in-order successor and its
+				parent, as described above
+		S.left ← N.left
+		if S is not N.right: 
+			PS.left ← S.right
+			S.right ← N.right
+		update PN to point to S instead of N
+    */
+   struct bst_node* S = N->right, *PS = NULL;
+   while(S->left != NULL){
+    PS = S;
+    S = S->left;
+   }
+   S->left = N->left;
+   if(S != N->right || PS != NULL){
+      PS->left = S->right;
+      S->right = N->right;
+   }
+   if(P != NULL){
+   if(N->key < P->key){
+      P->left = S;    
+    }
+    if(N->key > P->key){
+      P->right = S;
+    }
+   }
+   else{
+    bst->root = S;
+   }
+  }
+  free(N);
   return;
 }
 
@@ -125,6 +268,27 @@ void bst_remove(struct bst* bst, int key) {
  *   if the key `key` was not found in `bst`.
  */
 void* bst_get(struct bst* bst, int key) {
+  /*N ← bst.root
+	while N is not NULL:
+		if N.key equals kq:
+			return success
+		else if kq < N.key:
+			N ← N.left
+		else:
+			N ← n.right
+	return failure*/
+  struct bst_node* N = bst->root;
+  while(N != NULL){
+    if(N->key == key){
+      return N->value;
+    }
+    else if(key < N->key){
+      N = N->left;
+    }
+    else{
+      N = N->right;
+    }
+  }
   return NULL;
 }
 
@@ -146,8 +310,24 @@ void* bst_get(struct bst* bst, int key) {
  * Return:
  *   Should return the height of bst.
  */
+int height(struct bst_node* node){
+  if(node == NULL){
+    return -1;
+  }
+  int l = height(node->left);
+  int r = height(node->right);
+  if(l > r){
+    return l+1;
+  }
+  else{
+    return r+1;
+  }
+
+}
+
  int bst_height(struct bst* bst) {
-   return 0;
+  
+   return height(bst->root);
  }
 
 /*
@@ -164,8 +344,42 @@ void* bst_get(struct bst* bst, int key) {
  *   Should return 1 if `bst` contains any path from the root to a leaf in
  *   which the keys add up to `sum`.  Should return 0 otherwise.
  */
+int path_sum(struct bst_node* node, int sum, int current_sum){
+  int l = 0; 
+  int r = 0;
+  int intermediate_sum = current_sum + *(int*)node->value;
+  if ( node->left != NULL){
+    l = path_sum(node->left, sum, intermediate_sum);
+  }
+  if ( node->right != NULL){
+    r = path_sum(node->right, sum, intermediate_sum); 
+  }
+  if (node->left == NULL && node->right == NULL){
+   // printf("%d\n", intermediate_sum);
+    if (intermediate_sum == sum){
+      return 1;
+    }
+    return 0;
+  }else{ 
+    /*
+    if (l == 1 || r == 1)}
+      return 1; 
+    else 
+      return 0; 
+      */
+    return l || r;
+  }
+
+}
+
+// int path_sum_r(struct bst_node* node){
+//   return path_sum_r(node->right) + node->value;
+// }
+
 int bst_path_sum(struct bst* bst, int sum) {
-  return 0;
+  int r = path_sum(bst->root, sum, 0);
+  return r; 
+  
 }
 
 /*
@@ -186,8 +400,26 @@ int bst_path_sum(struct bst* bst, int sum) {
  * Return:
  *   Should return the sum of all keys in `bst` between `lower` and `upper`.
  */
+int summer(struct bst_node* node, int lower, int upper){
+  // int sum;
+  
+  while(node != NULL){
+       
+    if(node->key >= lower && node->key <= upper){
+        return summer(node->left, lower, upper) + node->key + summer(node->right, lower, upper);
+    }
+    else
+      return summer(node->left, lower, upper) + summer(node->right, lower, upper);
+    // return sum;
+  }
+  
+}
+
 int bst_range_sum(struct bst* bst, int lower, int upper) {
-  return 0;
+  // for (int i = lower; i <= upper; i++) {
+        int sum = summer(bst->root, lower, upper);
+    // }
+  return sum;
 }
 
 /*****************************************************************************
